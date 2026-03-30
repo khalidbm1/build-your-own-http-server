@@ -1,0 +1,26 @@
+# .gitignore
+
+# Compiled binary
+# الملف الثنائي المترجم
+build-your-own-http-server
+server
+
+# OS files
+# ملفات النظام
+.DS_Store
+Thumbs.db
+
+# IDE files
+# ملفات بيئة التطوير
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test binary
+# ملف الاختبار الثنائي
+*.test
+
+# Go build cache (rarely needed, but just in case)
+# ذاكرة التخزين المؤقت لبناء Go
+/tmp/
