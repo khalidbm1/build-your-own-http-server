@@ -53,16 +53,14 @@ func FileServer(baseDir, urlPrefix string) func(*request.Request) *Response {
 			}
 			return InternalError(fmt.Sprintf("Error Reading File: %v", err))
 		}
-		resp := NewResponse(200)
-		resp.SetHeader("Content-type", getMimeType(fullPath))
+		resp := NewResponse(200, "Content-type", getMimeType(fullPath))
 		resp.Body = string(fileBytes)
 		return resp
 	}
 }
 
 func Forbidden(message string) *Response {
-	r := NewResponse(403)
-	r.SetHeader("Content-Type", "text/plain; charset=utf-8")
+	r := NewResponse(403, "Content-Type", "text/plain; charset=utf-8")
 	r.Body = message
 	return r
 }

@@ -7,46 +7,92 @@ import (
 
 type Response struct {
 	StatusCode int
-	Headers    [][2]string
-	Body       string
+	// StatusText string
+	ContentType string
+	Headers     [][2]string
+	Body        string
 }
 
-var statusReasons = map[int]string{
-	200: "OK",
-	201: "Created",
-	202: "Accepted",
-	204: "No Content",
-	301: "Moved Permanently",
-	302: "Found",
-	304: "Not Modified",
-	400: "Bad Request",
-	401: "Unauthorized",
-	403: "Forbidden",
-	404: "Not Found",
-	405: "Method Not Allowed",
-	406: "Not Acceptable",
-	408: "Request Timeout",
-	410: "Gone",
-	411: "Length Required",
-	412: "Precondition Failed",
-	413: "Payload Too Large",
-	414: "URI Too Long",
-	415: "Unsupported Media Type",
-	416: "Range Not Satisfiable",
-	417: "Expectation Failed",
-	500: "Internal Server Error",
-	501: "Not Implemented",
-	502: "Bad Gateway",
-	503: "Service Unavailable",
-	504: "Gateway Timeout",
-	505: "HTTP Version Not Supported",
+// var statusReasons = map[int]string{
+// 	200: "OK",
+// 	201: "Created",
+// 	202: "Accepted",
+// 	204: "No Content",
+// 	301: "Moved Permanently",
+// 	302: "Found",
+// 	304: "Not Modified",
+// 	400: "Bad Request",
+// 	401: "Unauthorized",
+// 	403: "Forbidden",
+// 	404: "Not Found",
+// 	405: "Method Not Allowed",
+// 	406: "Not Acceptable",
+// 	408: "Request Timeout",
+// 	410: "Gone",
+// 	411: "Length Required",
+// 	412: "Precondition Failed",
+// 	413: "Payload Too Large",
+// 	414: "URI Too Long",
+// 	415: "Unsupported Media Type",
+// 	416: "Range Not Satisfiable",
+// 	417: "Expectation Failed",
+// 	500: "Internal Server Error",
+// 	501: "Not Implemented",
+// 	502: "Bad Gateway",
+// 	503: "Service Unavailable",
+// 	504: "Gateway Timeout",
+// 	505: "HTTP Version Not Supported",
+// }
+
+func NewResponse(statusCode int, contentType, body string) *Response {
+	return &Response{
+		StatusCode:  statusCode,
+		ContentType: contentType,
+		Body:        body,
+	}
+}
+
+func (r *Response) Bytes() []byte {
+	statusText := reasonForStatus(r.StatusCode)
+	statusLine := fmt.Sprintf("Http/1.1 %d %s\r\n", r.StatusCode, statusText)
+
+	headers := fmt.Sprintf("Content-Type: %s\r\n", r.ContentType)
+	headers += fmt.Sprintf("Content-Length: %d\r\n", len(r.Body))
+	headers += "Connection: Close\r\n"
+
+	response := statusLine + headers + "\r\n" + r.Body
+	return []byte(response)
+}
+
+func StatusText(code int) string {
+	statusTexts := map[int]string{
+		100: "Continue",
+		101: "Switching Protocols",
+		200: "OK",
+		201: "Created",
+		204: "No Content",
+		301: "Moved Permanently",
+		302: "Found",
+		304: "Not Modified",
+		400: "Bad Request",
+		401: "Unauthorized",
+		403: "Forbidden",
+		404: "Not Found",
+		405: "Method Not Allowed",
+		431: "Request Header Fields Too Large",
+		500: "Internal Server Error",
+		501: "Not Implemented",
+		502: "Bad Gateway",
+		503: "Service Unavailable",
+	}
+	if text, ok := statusTexts[code]; ok {
+		return text
+	}
+	return "Unknown"
 }
 
 func reasonForStatus(code int) string {
-	if reason, ok := statusReasons[code]; ok {
-		return reason
-	}
-	return "Unknown"
+	return StatusText(code)
 }
 
 func (r *Response) SetHeader(key, value string) {
@@ -79,19 +125,11 @@ func (r *Response) Build() []byte {
 	return []byte(sb.String())
 }
 
-func NewResponse(statusCode int) *Response {
-	return &Response{
-		StatusCode: statusCode,
-		Headers:    make([][2]string, 0),
-	}
-}
-
 // Text creates a 200 OK response with plain text body.
 //
 // Text يسوي استجابة 200 OK بجسم نص عادي.
 func Text(body string) *Response {
-	r := NewResponse(200)
-	r.SetHeader("Content-Type", "text/plain; charset=utf-8")
+	r := NewResponse(200, "Content-Type", "text/plain; charset=utf-8")
 	r.Body = body
 	return r
 }
@@ -100,8 +138,7 @@ func Text(body string) *Response {
 //
 // HTML يسوي استجابة 200 OK بجسم HTML.
 func HTML(body string) *Response {
-	r := NewResponse(200)
-	r.SetHeader("Content-Type", "text/html; charset=utf-8")
+	r := NewResponse(200, "Content-Type", "text/html; charset=utf-8")
 	r.Body = body
 	return r
 }
@@ -110,8 +147,7 @@ func HTML(body string) *Response {
 //
 // JSON يسوي استجابة 200 OK بجسم JSON.
 func JSON(body string) *Response {
-	r := NewResponse(200)
-	r.SetHeader("Content-Type", "application/json")
+	r := NewResponse(200, "Content-Type", "application/json")
 	r.Body = body
 	return r
 }
@@ -120,8 +156,7 @@ func JSON(body string) *Response {
 //
 // NOTFOUND يسوي استجابة 404 Not Found.
 func NotFound(body string) *Response {
-	r := NewResponse(404)
-	r.SetHeader("Content-Type", "text/plain; chrset=utf-8")
+	r := NewResponse(404, "Content-Type", "text/plain; chrset=utf-8")
 	r.Body = body
 	return r
 }
@@ -130,8 +165,7 @@ func NotFound(body string) *Response {
 //
 // BadRequest يسوي استجابة 400 Bad Request.
 func BadRequest(message string) *Response {
-	r := NewResponse(400)
-	r.SetHeader("Content-Type", "text/plain; charset=utf-8")
+	r := NewResponse(400, "Content-Type", "text/plain; charset=utf-8")
 	r.Body = message
 	return r
 }
@@ -140,8 +174,7 @@ func BadRequest(message string) *Response {
 //
 // InternalError يسوي استجابة 500 Internal Server Error.
 func InternalError(message string) *Response {
-	r := NewResponse(500)
-	r.SetHeader("Content-Type", "text/plain; charset=utf-8")
+	r := NewResponse(500, "Content-Type", "text/plain; charset=utf-8")
 	r.Body = message
 	return r
 }
